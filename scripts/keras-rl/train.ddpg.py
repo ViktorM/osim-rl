@@ -33,11 +33,16 @@ parser.add_argument('--gamma', dest='gamma', action='store', default=0.99)
 parser.add_argument('--target_model_update', dest='target_model_update', action='store', default=1e-3, type=float)
 parser.add_argument('--nb_steps', dest='nb_steps', action='store', default=1500000, type=int)
 parser.add_argument('--rseed', dest='rseed', action='store', default=random.randint(0, 4294967295), type=int)
-
 args = parser.parse_args()
+
+print "Random seed: %i\n" % args.rseed
+np.random.seed(args.rseed)
+random.seed(args.rseed)
 
 if args.env == "Gait":
     env = GaitEnv(args.visualize)
+elif args.env == "Stand":
+    env = StandEnv(args.visualize)
 else:
     env = ArmEnv(args.visualize)
 
@@ -48,13 +53,13 @@ init_name='lecun_uniform'
 # Next, we build a simple model.
 actor = Sequential()
 actor.add(Flatten(input_shape=(1,) + env.observation_space.shape))
-actor.add(Dense(24, init = init_name))
+actor.add(Dense(30, init = init_name))
 actor.add(Activation('relu'))
-actor.add(Dense(24, init = init_name))
+actor.add(Dense(30, init = init_name))
 actor.add(Activation('relu'))
-actor.add(Dense(24, init = init_name))
+actor.add(Dense(30, init = init_name))
 actor.add(Activation('relu'))
-actor.add(Dense(24, init = init_name))
+actor.add(Dense(30, init = init_name))
 actor.add(Activation('relu'))
 actor.add(Dense(nb_actions, init = init_name))
 actor.add(Activation('sigmoid'))
@@ -64,13 +69,13 @@ action_input = Input(shape=(nb_actions,), name='action_input')
 observation_input = Input(shape=(1,) + env.observation_space.shape, name='observation_input')
 flattened_observation = Flatten()(observation_input)
 x = merge([action_input, flattened_observation], mode='concat')
-x = Dense(48, init = init_name)(x)
+x = Dense(60, init = init_name)(x)
 x = Activation('relu')(x)
-x = Dense(48, init = init_name)(x)
+x = Dense(60, init = init_name)(x)
 x = Activation('relu')(x)
-x = Dense(48, init = init_name)(x)
+x = Dense(60, init = init_name)(x)
 x = Activation('relu')(x)
-x = Dense(48, init = init_name)(x)
+x = Dense(60, init = init_name)(x)
 x = Activation('relu')(x)
 x = Dense(1)(x)
 x = Activation('linear')(x)
