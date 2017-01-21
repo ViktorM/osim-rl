@@ -143,6 +143,7 @@ class StandEnv(GaitEnv):
     def compute_reward(self):
         y = self.osim_model.joints[0].getCoordinate(2).getValue(self.osim_model.state)
         x = self.osim_model.joints[0].getCoordinate(1).getValue(self.osim_model.state)
+        ang = self.osim_model.joints[0].getCoordinate(0).getValue(self.osim_model.state)
 
         pos = self.osim_model.model.calcMassCenterPosition(self.osim_model.state)
         vel = self.osim_model.model.calcMassCenterVelocity(self.osim_model.state)
@@ -150,7 +151,7 @@ class StandEnv(GaitEnv):
 
         a = abs(acc[0])**2 + abs(acc[1])**2 + abs(acc[2])**2
         v = abs(vel[0])**2 + abs(vel[1])**2 + abs(vel[2])**2
-        rew = 50.0 - min(a,10.0) - min(v,40.0)
+        rew = 50.0 - min(a, 10.0) - min(v, 40.0) - 20.0 * abs(alpha)
 
         return rew / 50.0
 
