@@ -10,7 +10,7 @@ from rl.agents import DDPGAgent
 from rl.memory import SequentialMemory
 from rl.random import OrnsteinUhlenbeckProcess
 
-from osim.env import ArmEnv
+from osim.env import ArmEnv, GaitEnv, StandEnv
 
 
 import argparse
