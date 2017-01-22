@@ -6,7 +6,7 @@ from .osim import OsimEnv
 
 class GaitEnv(OsimEnv):
     ninput = 25
-    model_path = os.path.join(os.path.dirname(__file__), '../models/gait9dof18musc.osim')
+    model_path = os.path.join(os.path.dirname(__file__), '../models/gait9dof18musc_Thelen_3Spheres_20161108.osim')
 
     def compute_reward(self):
         obs = self.get_observation()
