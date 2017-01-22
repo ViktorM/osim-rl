@@ -4,9 +4,7 @@ import sys
 
 from keras.models import Sequential, Model
 from keras.layers import Dense, Activation, Flatten, Input, merge
-from keras.optimizers import Adam, Adadelta, RMSpropá Nadam
-
-import numpy as np
+from keras.optimizers import Adam, Adadelta, RMSprop, Nadam
 
 from rl.agents import DDPGAgent
 from rl.memory import SequentialMemory
@@ -14,7 +12,6 @@ from rl.random import OrnsteinUhlenbeckProcess
 
 from osim.env import *
 
-from keras.optimizers import RMSprop
 
 import argparse
 import math
@@ -31,7 +28,7 @@ parser.add_argument('--sigma', dest='sigma', action='store', default=0.25)
 parser.add_argument('--theta', dest='theta', action='store', default=0.15)
 parser.add_argument('--gamma', dest='gamma', action='store', default=0.99)
 parser.add_argument('--target_model_update', dest='target_model_update', action='store', default=1e-3, type=float)
-parser.add_argument('--nb_steps', dest='nb_steps', action='store', default=1500000, type=int)
+parser.add_argument('--nb_steps', dest='nb_steps', action='store', default=1000000, type=int)
 parser.add_argument('--rseed', dest='rseed', action='store', default=random.randint(0, 4294967295), type=int)
 args = parser.parse_args()
 
@@ -96,7 +93,7 @@ agent = DDPGAgent(nb_actions=nb_actions, actor=actor, critic=critic, critic_acti
                   random_process=random_process, gamma=float(args.gamma), batch_size=32, target_model_update=float(args.target_model_update),
                   delta_range=(-100., 100.))
 
-agent.compile([Nadam(lr=0.001), Nadam(lr=0.002)], metrics=['mae'])
+agent.compile([Nadam(lr=0.0005), Nadam(lr=0.001)], metrics=['mae'])
 
 # Okay, now it's time to learn something! We visualize the training here for show, but this
 # slows down training quite a lot. You can always safely abort the training prematurely using

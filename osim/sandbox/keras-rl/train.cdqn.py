@@ -4,7 +4,7 @@ import gym
 
 from keras.models import Sequential, Model
 from keras.layers import Dense, Activation, Flatten, Input, merge
-from keras.optimizers import Adam
+from keras.optimizers import Adam, Adadelta, RMSprop, Nadam
 
 from rl.agents import ContinuousDQNAgent
 from rl.memory import SequentialMemory
