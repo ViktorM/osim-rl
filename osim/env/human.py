@@ -6,7 +6,8 @@ from .osim import OsimEnv
 
 class GaitEnv(OsimEnv):
     ninput = 31
-    model_path = os.path.join(os.path.dirname(__file__), '../models/gait9dof18musc.osim')
+    # model_path = os.path.join(os.path.dirname(__file__), '../models/gait9dof18musc.osim')
+    model_path = os.path.join(os.path.dirname(__file__), '../models/gait9dof18musc_Thelen_3Spheres_20161108.osim')
 
     def reset(self):
         self.last_state = [0] * self.ninput
