@@ -50,7 +50,7 @@ actor.add(Dense(32, init = init))
 actor.add(ELU())
 actor.add(Dense(32, init = init))
 actor.add(ELU())
-actor.add(Dense(nb_actions), init = init)
+actor.add(Dense(nb_actions, init = init))
 actor.add(Activation('sigmoid'))
 print(actor.summary())
 
