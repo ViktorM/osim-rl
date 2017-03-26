@@ -6,8 +6,8 @@ from .osim import OsimEnv
 
 class GaitEnv(OsimEnv):
     ninput = 31
-    # model_path = os.path.join(os.path.dirname(__file__), '../models/gait9dof18musc.osim')
-    model_path = os.path.join(os.path.dirname(__file__), '../models/gait9dof18musc_Thelen_3Spheres_20161108.osim')
+    model_path = os.path.join(os.path.dirname(__file__), '../models/gait9dof18musc.osim')
+  #  model_path = os.path.join(os.path.dirname(__file__), '../models/gait9dof18musc_Thelen_3Spheres_20161108.osim')
 
     def reset(self):
         self.last_state = [0] * self.ninput
@@ -36,12 +36,12 @@ class GaitEnv(OsimEnv):
         pos = self.current_state[19] # self.osim_model.model.calcMassCenterPosition(self.osim_model.state)[0]
 
 #            min(y_vel,0.0)/5.0 -\
-        reward = delta * 1.0\
+        reward = delta * 2.0\
             -(tilt-0.1)**2\
             -pen_musc\
             -(tilt_vel)**2\
-            +100*(self.current_state[27] - self.last_state[27])\
-            +100*(self.current_state[29] - self.last_state[29])\
+            +50*(self.current_state[27] - self.last_state[27])\
+            +50*(self.current_state[29] - self.last_state[29])\
             -(self.current_state[27] + self.current_state[29] - 2*self.current_state[25])**2 #+\
             # 10 * min(0.3, abs(self.current_state[27] - self.current_state[29])) *\
             # abs(min(self.current_state[28],0.1) - min(self.current_state[30],0.1))
@@ -52,7 +52,7 @@ class GaitEnv(OsimEnv):
 
     def is_pelvis_too_low(self):
         y = self.osim_model.joints[0].getCoordinate(2).getValue(self.osim_model.state)
-        return (y < 0.7)
+        return (y < 0.725)
     
     def is_done(self):
         return self.is_pelvis_too_low()
