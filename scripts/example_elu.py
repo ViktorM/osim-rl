@@ -95,9 +95,9 @@ agent.compile([Nadam(lr=0.001, clipnorm=2.), Nadam(lr=0.001, clipnorm=2.)], metr
 if args.train:
     agent.load_weights(args.start_weights)
     checkpoint_weights_filename = 'training/ddpg_elu_rand_Gait_{step}.h5f'
-    log_filename = 'training/ddpg_elu_rand_{}.json'.format(args.env_name)
+    log_filename = 'training/ddpg_elu_rand_{}.json'.format('Gait')
     callbacks = [ModelIntervalCheckpoint(checkpoint_weights_filename, interval=10000)]
-	callbacks += [FileLogger(log_filename, interval=10000)]
+    callbacks += [FileLogger(log_filename, interval=10000)]
     agent.fit(env, callbacks=callbacks, nb_steps=nallsteps, visualize=False, verbose=1, nb_max_episode_steps=env.timestep_limit, log_interval=10000)
     # After training is done, we save the final weights.
     agent.save_weights(args.model, overwrite=True)

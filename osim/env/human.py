@@ -37,6 +37,7 @@ class GaitEnv(OsimEnv):
 
 		reg_k = 0.1
         reward = delta * 1.0;
+		scale = 0.5
 		
 		reward_type = 2
 		if reward_type == 1:
@@ -45,11 +46,10 @@ class GaitEnv(OsimEnv):
             self.last_state = self.current_state				
         elif reward_type == 2:
             reward = reward - (tilt - 0.1)**2 - (tilt_vel)**2\
-                + 50.0 *((self.current_state[27] - self.last_state[27]) + (self.current_state[29] - self.last_state[29]))\
+                + 100.0 *((self.current_state[27] - self.last_state[27]) + (self.current_state[29] - self.last_state[29]))\
                 - (self.current_state[27] + self.current_state[29] - 2.0 * self.current_state[25])**2 \
                 - reg_k * pen_musc
-                # 10 * min(0.3, abs(self.current_state[27] - self.current_state[29])) *\
-                # abs(min(self.current_state[28],0.1) - min(self.current_state[30],0.1))
+            reward *= scale
             self.last_state = self.current_state
         else:
             reward = delta
@@ -96,6 +96,13 @@ class GaitEnv(OsimEnv):
 
     def get_observation(self):
         invars = np.array([0] * self.ninput, dtype='f')
+		
+        pelvis_vel = self.osim_model.joints[0].getCoordinate(1).getSpeedValue(self.osim_model.state)
+        scale = 0.3
+        rand_vel = scale * np.random.normal()
+		
+        new_vel = pelvis_vel + rand_vel
+        self.osim_model.joints[0].getCoordinate(1).setSpeedValue(self.osim_model.state, new_vel)
 
         invars[0] = 0.0
 
