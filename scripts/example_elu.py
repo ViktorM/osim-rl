@@ -15,6 +15,8 @@ from rl.agents import DDPGAgent
 from rl.memory import SequentialMemory
 from rl.random import OrnsteinUhlenbeckProcess
 
+from rl.callbacks import FileLogger, ModelIntervalCheckpoint
+
 from osim.env import *
 
 import argparse
@@ -24,10 +26,10 @@ import math
 parser = argparse.ArgumentParser(description='Train or test neural net motor controller')
 parser.add_argument('--train', dest='train', action='store_true', default=True)
 parser.add_argument('--test', dest='train', action='store_false', default=True)
-parser.add_argument('--steps', dest='steps', action='store', default=250000)
+parser.add_argument('--steps', dest='steps', action='store', default=200000)
 parser.add_argument('--visualize', dest='visualize', action='store_true', default=False)
-parser.add_argument('--start_weights', dest='start_weights', action='store', default="weights/ddpg_elu.h5f")
-parser.add_argument('--model', dest='model', action='store', default="weights/ddpg_elu2.h5f")
+parser.add_argument('--start_weights', dest='start_weights', action='store', default="weights/ddpg_elu_rew2_best.h5f")
+parser.add_argument('--model', dest='model', action='store', default="weights/ddpg_elu_rew3.h5f")
 args = parser.parse_args()
 
 # Load walking environment
@@ -71,24 +73,27 @@ print(critic.summary())
 
 # Set up the agent for training
 memory = SequentialMemory(limit=100000, window_length=1)
-random_process = OrnsteinUhlenbeckProcess(theta=.15, mu=0., sigma=.25, size=env.noutput)
+random_process = OrnsteinUhlenbeckProcess(theta=.12, mu=0., sigma=.11, size=env.noutput)
 agent = DDPGAgent(nb_actions=nb_actions, actor=actor, critic=critic, critic_action_input=action_input,
-                  memory=memory, nb_steps_warmup_critic=200, nb_steps_warmup_actor=200,
+                  memory=memory, nb_steps_warmup_critic=100, nb_steps_warmup_actor=100,
                   random_process=random_process, gamma=.99, target_model_update=1e-3,
                   delta_clip=1.)
 
-agent.compile([Nadam(lr=0.0005, clipnorm=1.), Nadam(lr=0.001, clipnorm=1.)], metrics=['mae'])
+agent.compile([Nadam(lr=0.001, clipnorm=1.), Nadam(lr=0.001, clipnorm=1.)], metrics=['mae'])
 
 # Okay, now it's time to learn something! We visualize the training here for show, but this
 # slows down training quite a lot. You can always safely abort the training prematurely using
 # Ctrl + C.
 if args.train:
     agent.load_weights(args.start_weights)
-    agent.fit(env, nb_steps=nallsteps, visualize=False, verbose=1, nb_max_episode_steps=env.timestep_limit, log_interval=10000)
+    checkpoint_weights_filename = 'ddpg_elu_best_Gait_{step}.h5f'
+  #  log_filename = 'dqn_{}_log.json'.format(args.env_name)
+    callbacks = [ModelIntervalCheckpoint(checkpoint_weights_filename, interval=20000)]
+    agent.fit(env, callbacks=callbacks, nb_steps=nallsteps, visualize=False, verbose=1, nb_max_episode_steps=env.timestep_limit, log_interval=10000)
     # After training is done, we save the final weights.
     agent.save_weights(args.model, overwrite=True)
 
 if not args.train:
     agent.load_weights(args.model)
     # Finally, evaluate our algorithm for 1 episode.
-    agent.test(env, nb_episodes=1, visualize=False, nb_max_episode_steps=1000)
+    agent.test(env, nb_episodes=1, visualize=False, nb_max_episode_steps=500)
