@@ -97,11 +97,11 @@ class GaitEnv(OsimEnv):
     def get_observation(self):
         invars = np.array([0] * self.ninput, dtype='f')
 		
+        dev = 0.2
         pelvis_vel = self.osim_model.joints[0].getCoordinate(1).getSpeedValue(self.osim_model.state)
-        scale = 0.3
-        rand_vel = scale * np.random.normal()
-		
-        new_vel = pelvis_vel + rand_vel
+        new_vel = np.random.normal(loc = pelvis_vel, scale = dev)
+	#	print("Old pelvis velocity = {}, new = {}".format(pelvis_vel, new_vel))
+
         self.osim_model.joints[0].getCoordinate(1).setSpeedValue(self.osim_model.state, new_vel)
 
         invars[0] = 0.0

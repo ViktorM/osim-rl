@@ -7,6 +7,7 @@ import sys
 from keras.models import Sequential, Model
 from keras.layers import Dense, Activation, Flatten, Input, merge
 from keras.layers.advanced_activations import LeakyReLU, ELU
+from keras.layers.noise import GaussianNoise
 from keras.optimizers import RMSprop, Adam, Nadam
 
 import numpy as np
@@ -26,10 +27,10 @@ import math
 parser = argparse.ArgumentParser(description='Train or test neural net motor controller')
 parser.add_argument('--train', dest='train', action='store_true', default=True)
 parser.add_argument('--test', dest='train', action='store_false', default=True)
-parser.add_argument('--steps', dest='steps', action='store', default=250000)
+parser.add_argument('--steps', dest='steps', action='store', default=500000)
 parser.add_argument('--visualize', dest='visualize', action='store_true', default=False)
-parser.add_argument('--start_weights', dest='start_weights', action='store', default="best/ddpg_elu_best_Gait_140K.h5f")
-parser.add_argument('--model', dest='model', action='store', default="weights/ddpg_elu_rand.h5f")
+parser.add_argument('--start_weights', dest='start_weights', action='store', default="best/ddpg_elu_rew2_best.h5f")
+parser.add_argument('--model', dest='model', action='store', default="weights/ddpg_elu_grand.h5f")
 parser.add_argument('--sigma', dest='sigma', action='store', default=0.25)
 parser.add_argument('--theta', dest='theta', action='store', default=0.15)
 parser.add_argument('--gamma', dest='gamma', action='store', default=0.99)
@@ -54,6 +55,7 @@ init = 'lecun_uniform'
 # Next, we build a very simple model.
 actor = Sequential()
 actor.add(Flatten(input_shape=(1,) + env.observation_space.shape))
+actor.add(GaussianNoise(0.02)) # add to the command line!
 actor.add(Dense(32, init = init))
 actor.add(ELU())
 actor.add(Dense(32, init = init))
@@ -61,6 +63,7 @@ actor.add(ELU())
 actor.add(Dense(32, init = init))
 actor.add(ELU())
 actor.add(Dense(nb_actions, init = init))
+actor.add(GaussianNoise(0.01))
 actor.add(Activation('sigmoid'))
 print(actor.summary())
 
@@ -68,6 +71,7 @@ action_input = Input(shape=(nb_actions,), name='action_input')
 observation_input = Input(shape=(1,) + env.observation_space.shape, name='observation_input')
 flattened_observation = Flatten()(observation_input)
 x = merge([action_input, flattened_observation], mode='concat')
+x = GaussianNoise(0.01)(x)
 x = Dense(64, init = init)(x)
 x = ELU()(x)
 x = Dense(64, init = init)(x)
@@ -94,8 +98,8 @@ agent.compile([Nadam(lr=0.001, clipnorm=2.), Nadam(lr=0.001, clipnorm=2.)], metr
 # Ctrl + C.
 if args.train:
     agent.load_weights(args.start_weights)
-    checkpoint_weights_filename = 'training/ddpg_elu_rand_Gait_{step}.h5f'
-    log_filename = 'training/ddpg_elu_rand_{}.json'.format('Gait')
+    checkpoint_weights_filename = 'training/ddpg_elu_grand_Gait_{step}.h5f'
+    log_filename = 'training/ddpg_elu_gauss_rand_{}.json'.format('Gait')
     callbacks = [ModelIntervalCheckpoint(checkpoint_weights_filename, interval=10000)]
     callbacks += [FileLogger(log_filename, interval=10000)]
     agent.fit(env, callbacks=callbacks, nb_steps=nallsteps, visualize=False, verbose=1, nb_max_episode_steps=env.timestep_limit, log_interval=10000)
