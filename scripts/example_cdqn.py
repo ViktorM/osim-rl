@@ -3,6 +3,7 @@ import gym
 
 from keras.models import Sequential, Model
 from keras.layers import Dense, Activation, Flatten, Input, merge
+from keras.layers.advanced_activations import LeakyReLU, ELU
 from keras.layers.noise import GaussianNoise
 from keras.optimizers import RMSprop, Adam, Nadam
 
@@ -10,6 +11,8 @@ from rl.agents import ContinuousDQNAgent
 from rl.memory import SequentialMemory
 from rl.random import OrnsteinUhlenbeckProcess
 from rl.core import Processor
+
+from rl.callbacks import FileLogger, ModelIntervalCheckpoint
 
 from osim.env import *
 import argparse
