@@ -14,7 +14,7 @@ remote_base = 'http://grader.crowdai.org'
 
 # Command line parameters
 parser = argparse.ArgumentParser(description='Submit the result to crowdAI')
-parser.add_argument('--model', dest='model', action='store', default="weights/ddpg_elu_2_actor.h5f")
+parser.add_argument('--model', dest='model', action='store', default="best/ddpg_elu_grand_Gait_250K_actor.h5f")
 parser.add_argument('--token', dest='token', action='store', default=CROWDAI_TOKEN)
 args = parser.parse_args()
 

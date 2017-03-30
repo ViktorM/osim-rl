@@ -10,8 +10,6 @@ from keras.layers.advanced_activations import LeakyReLU, ELU
 from keras.layers.noise import GaussianNoise
 from keras.optimizers import RMSprop, Adam, Nadam
 
-import numpy as np
-
 from rl.agents import DDPGAgent
 from rl.memory import SequentialMemory
 from rl.random import OrnsteinUhlenbeckProcess
@@ -24,7 +22,7 @@ import argparse
 import math
 
 # Command line parameters
-parser = argparse.ArgumentParser(description='Train or test neural net motor controller')
+parser = argparse.ArgumentParser(description='Train or test deep neural net motor controller')
 parser.add_argument('--train', dest='train', action='store_true', default=True)
 parser.add_argument('--test', dest='train', action='store_false', default=True)
 parser.add_argument('--steps', dest='steps', action='store', default=500000)
@@ -37,14 +35,15 @@ parser.add_argument('--gamma', dest='gamma', action='store', default=0.99)
 parser.add_argument('--rseed', dest='rseed', action='store', default=53, type=int)
 args = parser.parse_args()
 
-print ("Random seed: %i\n", args.rseed)
-np.random.seed(args.rseed)
-random.seed(args.rseed)
 
 # Load walking environment
 env = GaitEnv(args.visualize)
-
 nb_actions = env.action_space.shape[0]
+
+print ("Random seed: %i\n", args.rseed)
+np.random.seed(args.rseed)
+random.seed(args.rseed)
+env.seed(args.rseed)
 
 # Total number of steps in training
 nallsteps = args.steps
@@ -85,7 +84,7 @@ print(critic.summary())
 
 # Set up the agent for training
 memory = SequentialMemory(limit=100000, window_length=1)
-random_process = OrnsteinUhlenbeckProcess(theta=float(args.theta), mu=0., sigma=float(args.sigma), size=env.noutput)
+random_process = OrnsteinUhlenbeckProcess(theta=float(args.theta), mu=0., sigma=float(args.sigma), size=nb_actions)
 agent = DDPGAgent(nb_actions=nb_actions, actor=actor, critic=critic, critic_action_input=action_input,
                   memory=memory, nb_steps_warmup_critic=100, nb_steps_warmup_actor=100,
                   random_process=random_process, gamma=float(args.gamma), batch_size=32, 
@@ -102,11 +101,11 @@ if args.train:
     log_filename = 'training/ddpg_elu_gauss_rand_{}.json'.format('Gait')
     callbacks = [ModelIntervalCheckpoint(checkpoint_weights_filename, interval=10000)]
     callbacks += [FileLogger(log_filename, interval=10000)]
-    agent.fit(env, callbacks=callbacks, nb_steps=nallsteps, visualize=False, verbose=1, nb_max_episode_steps=env.timestep_limit, log_interval=10000)
+    agent.fit(env, callbacks=callbacks, nb_steps=nallsteps, visualize=False, verbose=1, nb_max_episode_steps=1000, log_interval=10000)
     # After training is done, we save the final weights.
     agent.save_weights(args.model, overwrite=True)
 
 if not args.train:
     agent.load_weights(args.model)
     # Finally, evaluate our algorithm for 1 episode.
-    agent.test(env, nb_episodes=1, visualize=False, nb_max_episode_steps=500)
+    agent.test(env, nb_episodes=3, visualize=False, nb_max_episode_steps=500)
