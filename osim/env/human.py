@@ -46,7 +46,7 @@ class GaitEnv(OsimEnv):
             self.last_state = self.current_state				
         elif reward_type == 2:
             reward = reward - (tilt - 0.1)**2 - (tilt_vel)**2\
-                + 50.0 * (self.current_state[27] - self.last_state[27] + self.current_state[29] - self.last_state[29])\
+                + 75.0 * (self.current_state[27] - self.last_state[27] + self.current_state[29] - self.last_state[29])\
                 - (self.current_state[27] + self.current_state[29] - 2.0 * self.current_state[25])**2 \
                 - reg_k * pen_musc
             reward *= scale
