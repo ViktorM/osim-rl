@@ -1,8 +1,4 @@
-# Derived from keras-rl
-#import opensim as osim
-import osim
 import numpy as np
-import sys
 
 from keras.models import Sequential, Model
 from keras.layers import Dense, Activation, Flatten, Input, merge
@@ -54,7 +50,7 @@ init = 'lecun_uniform'
 # Next, we build a very simple model.
 actor = Sequential()
 actor.add(Flatten(input_shape=(1,) + env.observation_space.shape))
-actor.add(GaussianNoise(0.02)) # add to the command line!
+actor.add(GaussianNoise(0.01)) # add to the command line!
 actor.add(Dense(32, init = init))
 actor.add(ELU())
 actor.add(Dense(32, init = init))

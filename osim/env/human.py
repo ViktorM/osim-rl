@@ -35,12 +35,12 @@ class GaitEnv(OsimEnv):
 
         pos = self.current_state[19] # self.osim_model.model.calcMassCenterPosition(self.osim_model.state)[0]
 
-		reg_k = 0.05
+        reg_k = 0.05
         reward = delta * 1.0
-		scale = 0.5
+        scale = 0.5
 		
-		reward_type = 2
-		if reward_type == 1:
+        reward_type = 2
+        if reward_type == 1:
             reward =  reward + self.current_state[27] - self.last_state[27] + self.current_state[29] - self.last_state[29] \
                 - reg_k * pen_musc
             self.last_state = self.current_state				

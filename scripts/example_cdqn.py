@@ -15,7 +15,9 @@ from rl.core import Processor
 from rl.callbacks import FileLogger, ModelIntervalCheckpoint
 
 from osim.env import *
+
 import argparse
+import math
 
 
 class PendulumProcessor(Processor):
@@ -31,7 +33,7 @@ parser.add_argument('--test', dest='train', action='store_false', default=True)
 parser.add_argument('--steps', dest='steps', action='store', default=500000)
 parser.add_argument('--visualize', dest='visualize', action='store_true', default=False)
 parser.add_argument('--start_weights', dest='start_weights', action='store', default="best/ddpg_elu_rew2_best_actor.h5f")
-parser.add_argument('--model', dest='model', action='store', default="CDQN/cdqn_grand.h5f")
+parser.add_argument('--model', dest='model', action='store', default="CDQN/cdqn_Gait_from_ddpg.h5f")
 parser.add_argument('--sigma', dest='sigma', action='store', default=0.25)
 parser.add_argument('--theta', dest='theta', action='store', default=0.15)
 parser.add_argument('--gamma', dest='gamma', action='store', default=0.99)
@@ -83,7 +85,7 @@ mu_model.add(Dense(32, init = init))
 mu_model.add(ELU())
 mu_model.add(Dense(nb_actions, init = init))
 mu_model.add(GaussianNoise(0.01))
-mu_model.add(Activation('linear'))
+mu_model.add(Activation('sigmoid'))
 print(mu_model.summary())
 
 action_input = Input(shape=(nb_actions,), name='action_input')
@@ -97,7 +99,7 @@ x = ELU()(x)
 x = Dense(64, init = init)(x)
 x = ELU()(x)
 x = Dense(((nb_actions * nb_actions + nb_actions) / 2))(x)
-x = Activation('linear')(x)
+x = Activation('sigmoid')(x)
 L_model = Model(input=[action_input, observation_input], output=x)
 print(L_model.summary())
 
@@ -106,19 +108,23 @@ print(L_model.summary())
 processor = PendulumProcessor()
 memory = SequentialMemory(limit=100000, window_length=1)
 random_process = OrnsteinUhlenbeckProcess(theta=float(args.theta), mu=0., sigma=float(args.sigma), size=nb_actions)
+
+#mu_model.load_weights('best/ddpg_elu_rew2_best_actor.h5f')
 agent = ContinuousDQNAgent(nb_actions=nb_actions, V_model=V_model, L_model=L_model, mu_model=mu_model,
                            memory=memory, nb_steps_warmup=100, random_process=random_process,
-                           gamma=float(args.gamma), target_model_update=1e-3, processor=processor)
+                           gamma=float(args.gamma), target_model_update=1e-3, delta_clip=2.,  
+                           processor=processor)
 agent.compile(Nadam(lr=.001, clipnorm=2.), metrics=['mae'])
 
 if args.train:
 #    agent.load_weights(args.start_weights)
-    checkpoint_weights_filename = 'CDQN/cdqn_grand_Gait_{step}.h5f'
-    log_filename = 'CDQN/cdqn_gauss_rand_{}.json'.format('Gait')
+    checkpoint_weights_filename = 'CDQN_train/cdqn_Gait_from_ddpg_{step}.h5f'
+#    log_filename = 'CDQN/cdqn_from_ddpg_{}.json'.format('Gait')
+    log_filename = 'CDQN/cdqn_{}_from_ddpg.json'.format('Gait')
     callbacks = [ModelIntervalCheckpoint(checkpoint_weights_filename, interval=10000)]
     callbacks += [FileLogger(log_filename, interval=10000)]
-    agent.fit(env, nb_steps=nallsteps, visualize=False, verbose=1, nb_max_episode_steps=1000)
-    agent.save_weights('CDQN/cdqn_{}_grand.h5f'.format("Gait"), overwrite=True)
+    agent.fit(env, callbacks=callbacks, nb_steps=nallsteps, visualize=False, verbose=1, nb_max_episode_steps=1000)
+    agent.save_weights(args.model, overwrite=True)
 
 if not args.train:
     agent.load_weights(args.model)
