@@ -27,34 +27,9 @@ class GaitEnv(OsimEnv):
         return self.osim_model.bodies[3].getTransformInGround(self.osim_model.state).p()
 
     def compute_reward(self):        
-        tilt = self.current_state[1] # self.osim_model.joints[0].getCoordinate(0).getValue(self.osim_model.state)
-        tilt_vel = self.current_state[4] # self.osim_model.joints[0].getCoordinate(0).getSpeedValue(self.osim_model.state)
         delta = self.current_state[2] - self.last_state[2]
-        y_vel = self.current_state[3] # self.osim_model.joints[0].getCoordinate(2).getSpeedValue(self.osim_model.state)
-        pen_musc = sum([x**2 for x in self.last_action]) / len(self.last_action)
 
-        pos = self.current_state[19] # self.osim_model.model.calcMassCenterPosition(self.osim_model.state)[0]
-
-        reg_k = 0.05
-        reward = delta * 1.0
-        scale = 0.5
-		
-        reward_type = 2
-        if reward_type == 1:
-            reward =  reward + self.current_state[27] - self.last_state[27] + self.current_state[29] - self.last_state[29] \
-                - reg_k * pen_musc
-            self.last_state = self.current_state				
-        elif reward_type == 2:
-            reward = reward - (tilt - 0.1)**2 - (tilt_vel)**2\
-                + 75.0 * (self.current_state[27] - self.last_state[27] + self.current_state[29] - self.last_state[29])\
-                - (self.current_state[27] + self.current_state[29] - 2.0 * self.current_state[25])**2 \
-                - reg_k * pen_musc
-            reward *= scale
-            self.last_state = self.current_state
-        else:
-            reward = delta
-
-        return reward
+        return delta
 
     def is_pelvis_too_low(self):
         y = self.osim_model.joints[0].getCoordinate(2).getValue(self.osim_model.state)

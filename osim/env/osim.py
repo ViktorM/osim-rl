@@ -8,14 +8,19 @@ import gym
 class Osim(object):
     # Initialize simulation
     model = None
-    manager = None
     state = None
     state0 = None
     joints = []
     bodies = []
+    brain = None
+
+    maxforces = []
+    curforces = []
 
     def __init__(self, model_path, visualize):
         self.model = opensim.Model(model_path)
+        self.model.initSystem()
+        self.brain = opensim.PrescribedController()
 
         # Enable the visualizer
         self.model.setUseVisualizer(visualize)
@@ -24,13 +29,40 @@ class Osim(object):
         self.forceSet = self.model.getForceSet()
         self.bodySet = self.model.getBodySet()
         self.jointSet = self.model.getJointSet()
+        self.contactGeometrySet = self.model.getContactGeometrySet()
+        
+        for j in range(self.muscleSet.getSize()):
+            func = opensim.Constant(1.0)
+            self.brain.addActuator(self.muscleSet.get(j))
+            self.brain.prescribeControlForActuator(j, func)
 
-    def reset(self):
-        if not self.state0:
-            self.state0 = self.model.initSystem()
-            self.manager = opensim.Manager(self.model)
+            self.maxforces.append(self.muscleSet.get(j).getMaxIsometricForce())
+            self.curforces.append(1.0)
 
-        self.state = opensim.State(self.state0)
+        self.model.addController(self.brain)
+
+    def set_strength(self, strength):
+        self.curforces = strength
+        for i in range(len(self.curforces)):
+            self.muscleSet.get(i).setMaxIsometricForce(self.curforces[i] * self.maxforces[i])
+
+    def get_body(self, name):
+        return self.bodySet.get(name)
+
+    def get_joint(self, name):
+        return self.jointSet.get(name)
+
+    def get_muscle(self, name):
+        return self.muscleSet.get(name)
+
+    def get_contact_geometry(self, name):
+        return self.contactGeometrySet.get(name)
+
+    def get_force(self, name):
+        return self.forceSet.get(name)
+
+    def initializeState(self):
+        self.state = self.model.initializeState()
 
 class Spec(object):
     def __init__(self, *args, **kwargs):
@@ -86,7 +118,7 @@ class OsimEnv(gym.Env):
     def __init__(self, visualize = True, noutput = None):
         self.visualize = visualize
         self.osim_model = Osim(self.model_path, self.visualize)
-        
+
         self.noutput = noutput
         if not noutput:
             self.noutput = self.osim_model.muscleSet.getSize()
@@ -100,7 +132,7 @@ class OsimEnv(gym.Env):
         self.horizon = self.timestep_limit
 
         self.configure()
-        self.reset()
+#        self.reset()
 
         self.spec = Spec()
 
@@ -109,8 +141,8 @@ class OsimEnv(gym.Env):
 
     def _reset(self):
         self.istep = 0
-        self.osim_model.reset()
-        return [0.0] * self.ninput
+        self.osim_model.initializeState()
+        return self.get_observation()
 
     def sanitify(self, x):
         if math.isnan(x):
@@ -123,23 +155,27 @@ class OsimEnv(gym.Env):
         return x
 
     def activate_muscles(self, action):
-        muscleSet = self.osim_model.model.getMuscles()
-        for j in range(self.noutput):
-            muscle = muscleSet.get(j)
-            muscle.setActivation(self.osim_model.state, float(action[j]))
+        if np.any(np.isnan(action)):
+            raise ValueError("NaN passed in the activation vector. Values in [0,1] interval are required.")
+        brain = opensim.PrescribedController.safeDownCast(self.osim_model.model.getControllerSet().get(0))
+        functionSet = brain.get_ControlFunctions()
+
+        for j in range(functionSet.getSize()):
+            func = opensim.Constant.safeDownCast(functionSet.get(j))
+            func.setValue( float(action[j]) )
 
     def _step(self, action):
         self.last_action = action
-        
-        # Integrate one step
-        self.osim_model.manager.setInitialTime(self.stepsize * self.istep)
-        self.osim_model.manager.setFinalTime(self.stepsize * (self.istep + 1))
 
-        # action = action[0]
         self.activate_muscles(action)
 
+        # Integrate one step
+        manager = opensim.Manager(self.osim_model.model)
+        manager.setInitialTime(self.stepsize * self.istep)
+        manager.setFinalTime(self.stepsize * (self.istep + 1))
+
         try:
-            self.osim_model.manager.integrate(self.osim_model.state)
+            manager.integrate(self.osim_model.state)
         except Exception as e:
             print (e)
             return self.get_observation(), -500, True, {}
@@ -149,12 +185,5 @@ class OsimEnv(gym.Env):
         res = [ self.get_observation(), self.compute_reward(), self.is_done(), {} ]
         return res
 
-
     def _render(self, mode='human', close=False):
         return
-
-    def log_diagnostics(self, paths):
-        """
-        Log extra information per iteration based on the collected paths
-        """
-        pass
